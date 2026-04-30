@@ -1,0 +1,343 @@
+You are a senior full-stack engineer building a production-grade **Smart College Canteen Management System**.
+
+The goal is to eliminate physical queues, reduce uncertainty, and optimize canteen operations through a real-time ordering and queue system.
+
+The system must be **feature-rich internally but extremely simple for users**. A student should be able to place an order in under 10 seconds.
+
+---
+
+### TECH STACK
+
+* Frontend: React (with clean, minimal UI)
+* Backend: Node.js + Express
+* Database: MongoDB
+* Realtime: Socket.io
+* Payments: Razorpay
+* Optional: Redis (for queue caching if needed)
+
+---
+
+### CORE PRINCIPLES
+
+1. UI must be minimal, fast, and intuitive
+2. System must handle real-world chaos (rush hours, stock issues)
+3. Backend must be modular and scalable
+4. Never trust frontend for critical operations (payments, order confirmation)
+5. Prioritize consistency over perfect accuracy (especially for time estimates)
+
+---
+
+### SYSTEM MODULES
+
+Build the system using modular architecture.
+
+---
+
+#### 1. AUTH & USER SYSTEM
+
+* Roles: Customer, Admin
+* Simple login (email/OTP or ID-based)
+* Store:
+
+  * name
+  * role
+  * walletBalance (optional)
+
+---
+
+#### 2. MENU & INVENTORY SYSTEM
+
+Each item should have:
+
+* name
+* price
+* category
+* isAvailable (boolean)
+* stock (number, optional)
+* lowStockThreshold
+* prepTime (in minutes)
+
+Features:
+
+* Auto decrease stock on order
+* Manual “Out of Stock” toggle
+* Low stock indicator
+* Time-based menu (breakfast/lunch/snacks)
+
+---
+
+#### 3. ORDER MANAGEMENT SYSTEM (CRITICAL)
+
+Order schema:
+
+* userId
+* items[] (name, quantity, price)
+* totalAmount
+* status:
+
+  * PAYMENT_PENDING
+  * PAYMENT_SUCCESS
+  * ORDER_CONFIRMED
+  * PREPARING
+  * READY
+  * COMPLETED
+  * CANCELLED
+* tokenNumber
+* queuePosition
+* estimatedTime
+* orderType (dine-in / takeaway)
+* createdAt
+
+---
+
+#### 4. QUEUE ENGINE
+
+Implement a dynamic queue system:
+
+* FIFO base queue
+* Auto token generation (reset daily)
+* Calculate:
+
+  * queuePosition
+  * ordersAhead
+* Recalculate queue on:
+
+  * new order
+  * order status change
+
+Expose:
+
+* Admin → full queue
+* Customer → only ordersAhead + token
+
+---
+
+#### 5. BATCHING ENGINE
+
+* Group similar items across orders (e.g., Maggi batch)
+* Maintain internal batch queues
+* Use batching to:
+
+  * optimize prep flow
+  * adjust estimatedTime
+
+Important:
+
+* Do NOT expose batching complexity to users
+* Only influence backend calculations
+
+---
+
+#### 6. ESTIMATED TIME SYSTEM
+
+Calculate using:
+
+* sum(prepTime of items ahead in queue)
+* adjust with batching logic
+
+Output:
+
+* simple estimate (e.g., “Ready in ~12 mins”)
+* avoid exact timestamps
+
+---
+
+#### 7. PAYMENT INTEGRATION
+
+Use Razorpay:
+
+Flow:
+
+1. Create order on backend
+2. Send payment request to frontend
+3. Verify payment using webhook
+4. Only then confirm order
+
+Handle edge cases:
+
+* payment success but order creation fails
+* duplicate payments
+* payment pending
+
+---
+
+#### 8. FAILURE HANDLING SYSTEM
+
+Handle:
+
+* Payment success but order fails → retry or manual fix
+* Item goes out of stock after payment →
+
+  * auto refund OR
+  * allow substitution
+
+Implement:
+
+* refund trigger system
+* admin override options
+
+---
+
+#### 9. ADMIN PANEL (VERY IMPORTANT)
+
+Design for non-technical staff.
+
+UI rules:
+
+* Large buttons
+* No typing required
+* Fast interactions
+
+Features:
+
+* Live order feed
+* Change status:
+
+  * Confirm → Preparing → Ready → Completed
+* Toggle item availability
+* View queue
+* See batching (optional internal view)
+
+---
+
+#### 10. CUSTOMER APP
+
+UI must be extremely simple:
+
+Flow:
+
+1. Open app
+2. Select items
+3. Pay
+4. Track order
+
+Features:
+
+* Menu with availability + low stock
+* Add to cart
+* Razorpay payment
+* Order tracking:
+
+  * token number
+  * orders ahead
+  * estimated time
+
+Additional:
+
+* Favorites / quick reorder
+* Order history
+* Combo suggestions
+
+---
+
+#### 11. PRE-ORDER SYSTEM
+
+* Allow users to select time slots
+* Store separately
+* Inject into queue when slot begins
+
+---
+
+#### 12. NOTIFICATIONS
+
+* Order ready alert (real-time via Socket.io)
+* Optional: sound/visual alerts in admin panel
+
+---
+
+#### 13. ANALYTICS SYSTEM
+
+Track:
+
+* most ordered items
+* peak hours
+* average prep time
+* order volume
+
+Store data even if dashboard is basic.
+
+---
+
+#### 14. WALLET SYSTEM (OPTIONAL BUT INCLUDED)
+
+* Add money
+* Pay via wallet
+* Faster checkout
+
+---
+
+### API DESIGN REQUIREMENTS
+
+Create clean REST APIs:
+
+Examples:
+
+* POST /order/create
+* POST /payment/verify
+* GET /queue/status
+* PATCH /order/:id/status
+* GET /menu
+* PATCH /menu/:id
+
+---
+
+### REAL-TIME REQUIREMENTS
+
+Use Socket.io for:
+
+* order status updates
+* queue updates
+* admin dashboard sync
+
+---
+
+### UI REQUIREMENTS
+
+Customer:
+
+* minimal clicks
+* clear CTA (“Order Now”)
+* fast loading
+
+Admin:
+
+* dashboard-like
+* real-time updates
+* big action buttons
+
+---
+
+### NON-FUNCTIONAL REQUIREMENTS
+
+* Handle concurrent users
+* Avoid race conditions in queue
+* Ensure idempotency in payments
+* Maintain data consistency
+
+---
+
+### DELIVERABLES
+
+1. Full backend (modular architecture)
+2. React frontend (customer + admin)
+3. Database schema
+4. API documentation
+5. Real-time implementation
+6. Payment integration
+7. Sample data
+
+---
+
+### FINAL INSTRUCTION
+
+Do not overcomplicate UI.
+Keep frontend extremely simple.
+Put complexity in backend logic.
+
+System should feel:
+
+* fast
+* predictable
+* reliable
+
+Even if internal logic is complex.
